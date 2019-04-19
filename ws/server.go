@@ -13,6 +13,7 @@ import (
     "fmt"
 	"net/http"
     "encoding/json"
+    "os/exec"
 
 	"github.com/gorilla/websocket"
 )
@@ -31,10 +32,26 @@ type Message struct {
 
 var upgrader = websocket.Upgrader{} // use default options
 
-func DetectIntentText(projectID, sessionID, text, languageCode string) (string, error) {
-    if projectID == "" || sessionID == "" {
-        return "", errors.New(fmt.Sprintf("Received empty project (%s) or session (%s)", projectID, sessionID))
+// func DetectIntentText(projectID, sessionID, text, languageCode string) (string, error) {
+//     if projectID == "" || sessionID == "" {
+//         return "", errors.New(fmt.Sprintf("Received empty project (%s) or session (%s)", projectID, sessionID))
+//     }
+// }
+
+func GetGcloudToken() (string, error) {
+    cmd := exec.Command("gcloud", 
+        "auth",
+        "application-default",
+        "print-access-token",)
+
+    out, err := cmd.Output()
+    if err != nil {
+        log.Fatal(err)
+        return "", err
     }
+
+    token := string(out)[:len(string(out))-1] // line ending subtract
+    return token, nil
 }
 
 func echo(w http.ResponseWriter, r *http.Request) {
@@ -51,15 +68,15 @@ func echo(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 		log.Printf("recv: %s", message)
-        //c := "Hello" + string(message)
-        //cc := append(bb, "c")
-        fmt.Println(json.Valid(message))
+
         var m Message
         err1 := json.Unmarshal(message, &m)
         if err1 != nil {
             log.Fatalln("error:", err1)
         }
 		err = c.WriteMessage(mt, []byte(m.Data.Query))
+        token, _ := GetGcloudToken()
+        fmt.Printf(token)
 		if err != nil {
 			log.Println("write:", err)
 			break
@@ -68,7 +85,7 @@ func echo(w http.ResponseWriter, r *http.Request) {
 }
 
 func home(w http.ResponseWriter, r *http.Request) {
-	homeTemplate.Execute(w, "ws://"+r.Host+"/echo")
+	homeTemplate.Execute(w, "ws://"+r.Host+"/echo/")
 }
 
 func main() {
