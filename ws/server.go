@@ -34,18 +34,30 @@ type Message struct {
 
 //Dialogflow Query struct
 type Text struct {
-        Text string `json:"text"`
-        LanguageCode string `json:"languageCode"`
+    Text string `json:"text"`
+    LanguageCode string `json:"languageCode"`
 }
 
 type TextInput struct {
-        TextInput Text `json:"text"`
+    TextInput Text `json:"text"`
 }
 
 type QueryInput struct {
     QueryInput TextInput `json:"queryInput"`
 }
 
+//Output json struct
+type EntityOutput struct {}
+
+type DataOutput struct {
+    Speech string `json:"speech"`
+    Entity EntityOutput `json:"entity"`
+}
+
+type Output struct {
+    Header [6]float64 `json:"header"`
+    Data DataOutput `json:"data"`
+}
 //var addr = flag.String("addr", "localhost:8080", "http service address")
 
 var upgrader = websocket.Upgrader{} // use default options
@@ -75,6 +87,7 @@ func DetectIntentText(projectID, sessionID, text, languageCode string) (string, 
         fmt.Printf("The HTTP request failed with error %s\n", err)
     } else {
         data, _ := ioutil.ReadAll(resp.Body)
+        fmt.Printf(string(data))
         js, _ := sj.NewJson(data)
         r := js.Get("queryResult").Get("fulfillmentText").MustString()
         fmt.Printf("%s\n", r)
@@ -121,7 +134,12 @@ func echo(w http.ResponseWriter, r *http.Request) {
             log.Fatalln("error:", err1)
         }
         rr, _ := DetectIntentText("chipotle-aeeb4", "123", m.Data.Query, "en")
-		err = c.WriteMessage(mt, []byte(rr))
+        fmt.Println(string(rr))
+        var p Output
+        p.Header = m.Header
+        p.Data.Speech = rr
+        b, _ := json.Marshal(p)
+		err = c.WriteMessage(mt, b)
 
 		if err != nil {
 			log.Println("write:", err)
