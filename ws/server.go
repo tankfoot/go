@@ -134,7 +134,6 @@ func echo(w http.ResponseWriter, r *http.Request) {
             log.Fatalln("error:", err1)
         }
         rr, _ := DetectIntentText("chipotle-aeeb4", "123", m.Data.Query, "en")
-        fmt.Println(string(rr))
         var p Output
         p.Header = m.Header
         p.Data.Speech = rr
@@ -155,7 +154,7 @@ func home(w http.ResponseWriter, r *http.Request) {
 func main() {
 	flag.Parse()
 	log.SetFlags(0)
-	http.HandleFunc("/echo", echo)
+	http.HandleFunc("/chipotle", echo)
 	http.HandleFunc("/", home)
 	//log.Fatal(http.ListenAndServe(*addr, nil))
     log.Fatal(http.ListenAndServe(":8080", nil))
